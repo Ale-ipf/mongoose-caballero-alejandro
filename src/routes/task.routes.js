@@ -10,12 +10,12 @@ import {
 } from "../controllers/task.controller.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import {
-  addTaskTagValidation,
+  addTagToTaskValidation,
   createTaskValidation,
-  idParamValidation,
-  tagIdParamValidation,
+  removeTagFromTaskValidation,
+  taskIdValidation,
   updateTaskValidation,
-} from "../middlewares/validations/resource.validation.js";
+} from "../middlewares/validations/task.validation.js";
 
 export const taskRouter = Router();
 
@@ -26,14 +26,14 @@ taskRouter
 
 taskRouter
   .route("/tasks/:id")
-  .get(idParamValidation, validate, getTaskById)
-  .patch(idParamValidation, updateTaskValidation, validate, updateTask)
-  .delete(idParamValidation, validate, deleteTask);
+  .get(taskIdValidation, validate, getTaskById)
+  .patch(taskIdValidation, updateTaskValidation, validate, updateTask)
+  .delete(taskIdValidation, validate, deleteTask);
 
 taskRouter
   .route("/tasks/:id/tags")
-  .post(idParamValidation, addTaskTagValidation, validate, addTagToTask);
+  .post(taskIdValidation, addTagToTaskValidation, validate, addTagToTask);
 
 taskRouter
   .route("/tasks/:id/tags/:tagId")
-  .delete(idParamValidation, tagIdParamValidation, validate, removeTagFromTask);
+  .delete(removeTagFromTaskValidation, validate, removeTagFromTask);

@@ -79,6 +79,14 @@ ese perfil con `populate("profile")` sin almacenar también su identificador en 
 El perfil es un documento separado porque sus datos se administran de forma independiente
 de los datos de acceso del usuario.
 
+## Relación uno a muchos entre usuarios y tareas
+
+Cada `Task` guarda en `author` la referencia al `User` que la creó. La relación inversa
+`User.tasks` es un virtual de Mongoose: no duplica los IDs de las tareas dentro del usuario
+y permite consultarlas con `User.findById(userId).populate("tasks")`. Este sentido inverso
+es útil para consultar tareas desde un usuario aunque `User` no almacene directamente la
+referencia.
+
 ## Relación muchos a muchos entre tareas y etiquetas
 
 Una tarea puede tener varias etiquetas y una misma etiqueta puede estar asociada a varias
@@ -110,3 +118,17 @@ entrada con `express-validator`; los errores de entrada devuelven `400`.
 
 El inicio de sesión verifica las credenciales, pero no crea una sesión persistente ni emite
 un token.
+
+## Eliminación lógica y relaciones
+
+Los documentos principales incluyen `deletedAt`. Al eliminar un documento, los controladores
+lo marcan con la fecha actual y las consultas de listado/detalle omiten los documentos que ya
+tienen esa marca. Al eliminar un usuario también se marcan sus tareas y perfil; al eliminar un
+rol o etiqueta se quitan sus referencias de usuarios o tareas, respectivamente. Las tareas
+se eliminan lógicamente al eliminar al autor; sus etiquetas permanecen porque también
+pueden estar asociadas a otras tareas.
+
+Las operaciones que abarcan varias colecciones no están dentro de una transacción MongoDB.
+Por ello, si la base de datos falla durante una eliminación en cascada, puede quedar una
+actualización parcial; para garantizar atomicidad, MongoDB debe ejecutarse como replica set y
+las operaciones deberán agruparse en una transacción.
