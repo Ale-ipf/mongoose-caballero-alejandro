@@ -5,13 +5,6 @@ export class ControllerError extends Error {
   }
 }
 
-export const pickFields = (source, fields) =>
-  Object.fromEntries(
-    fields
-      .filter((field) => source[field] !== undefined)
-      .map((field) => [field, source[field]]),
-  );
-
 export const ensureDocumentsExist = async (Model, ids, label) => {
   const uniqueIds = [...new Set(ids.filter(Boolean).map(String))];
   if (uniqueIds.length === 0) return;

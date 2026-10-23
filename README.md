@@ -92,3 +92,21 @@ Se puede cargar la información relacionada con `populate`. Por ejemplo,
 `Task.findById(taskId).populate("tags")` trae las etiquetas de una tarea, y
 `Tag.findById(tagId).populate("tasks")` trae las tareas asociadas a una etiqueta. El campo
 virtual `tasks` está configurado para incluirse al convertir el documento a JSON u objeto.
+
+## Endpoints
+
+Todas las rutas usan el prefijo `/api`. Las rutas de creación y actualización validan la
+entrada con `express-validator`; los errores de entrada devuelven `400`.
+
+| Recurso | Rutas |
+| --- | --- |
+| Autenticación | `POST /auth/register`, `POST /auth/login` |
+| Usuarios | `GET/POST /users`, `GET/PATCH/DELETE /users/:id` |
+| Perfiles | `GET/POST /profiles`, `GET/PATCH/DELETE /profiles/:id` |
+| Tareas | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id` |
+| Roles | `GET/POST /roles`, `GET/PATCH/DELETE /roles/:id` |
+| Etiquetas | `GET/POST /tags`, `GET/PATCH/DELETE /tags/:id` |
+| Etiquetas de tareas | `POST /tasks/:id/tags` con `{ "tagId": "..." }`; `DELETE /tasks/:id/tags/:tagId` |
+
+El inicio de sesión verifica las credenciales, pero no crea una sesión persistente ni emite
+un token.

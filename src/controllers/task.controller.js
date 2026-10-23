@@ -1,14 +1,13 @@
+import { matchedData } from "express-validator";
 import { Tag } from "../models/tag.model.js";
 import { Task } from "../models/task.model.js";
 import { User } from "../models/user.model.js";
 import {
   ensureDocumentsExist,
   notFound,
-  pickFields,
   sendControllerError,
 } from "./controller.utils.js";
 
-const taskFields = ["title", "description", "author", "tags"];
 const taskPopulation = [
   { path: "author", match: { deletedAt: null } },
   { path: "tags", match: { deletedAt: null } },
@@ -21,7 +20,7 @@ const checkTaskReferences = async (data) => {
 
 export const createTask = async (req, res) => {
   try {
-    const data = pickFields(req.body, taskFields);
+    const data = matchedData(req, { locations: ["body"] });
     await checkTaskReferences(data);
 
     const task = new Task(data);
@@ -58,7 +57,7 @@ export const getTaskById = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   try {
-    const data = pickFields(req.body, taskFields);
+    const data = matchedData(req, { locations: ["body"] });
     await checkTaskReferences(data);
 
     const task = await Task.findOneAndUpdate(
@@ -89,7 +88,7 @@ export const deleteTask = async (req, res) => {
 
 export const addTagToTask = async (req, res) => {
   try {
-    const { tagId } = req.body;
+    const { tagId } = matchedData(req, { locations: ["body"] });
     await ensureDocumentsExist(Tag, [tagId], "etiquetas");
 
     const task = await Task.findOneAndUpdate(
@@ -112,7 +111,7 @@ export const addTagToTask = async (req, res) => {
 
 export const removeTagFromTask = async (req, res) => {
   try {
-    const { tagId } = req.body;
+    const tagId = req.params.tagId ?? req.body.tagId;
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, deletedAt: null, tags: tagId },
       { $pull: { tags: tagId } },

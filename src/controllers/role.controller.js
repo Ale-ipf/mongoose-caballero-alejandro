@@ -1,14 +1,14 @@
+import { matchedData } from "express-validator";
 import { Role } from "../models/role.model.js";
 import { User } from "../models/user.model.js";
 import {
   notFound,
-  pickFields,
   sendControllerError,
 } from "./controller.utils.js";
 
 export const createRole = async (req, res) => {
   try {
-    const role = new Role(pickFields(req.body, ["rolename"]));
+    const role = new Role(matchedData(req, { locations: ["body"] }));
     await role.save();
     return res.status(201).json({ data: role });
   } catch (error) {
@@ -39,7 +39,7 @@ export const updateRole = async (req, res) => {
   try {
     const role = await Role.findOneAndUpdate(
       { _id: req.params.id, deletedAt: null },
-      { $set: pickFields(req.body, ["rolename"]) },
+      { $set: matchedData(req, { locations: ["body"] }) },
       { new: true, runValidators: true },
     );
     if (!role) return notFound(res, "Rol");

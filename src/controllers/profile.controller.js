@@ -1,18 +1,17 @@
+import { matchedData } from "express-validator";
 import { Profile } from "../models/profile.model.js";
 import { User } from "../models/user.model.js";
 import {
   ensureDocumentsExist,
   notFound,
-  pickFields,
   sendControllerError,
 } from "./controller.utils.js";
 
-const profileFields = ["firstName", "lastName", "bio", "user"];
 const profilePopulation = { path: "user", match: { deletedAt: null } };
 
 export const createProfile = async (req, res) => {
   try {
-    const data = pickFields(req.body, profileFields);
+    const data = matchedData(req, { locations: ["body"] });
     await ensureDocumentsExist(User, [data.user], "usuarios");
 
     const profile = new Profile(data);
@@ -50,7 +49,7 @@ export const getProfileById = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const data = pickFields(req.body, profileFields);
+    const data = matchedData(req, { locations: ["body"] });
     if (data.user) await ensureDocumentsExist(User, [data.user], "usuarios");
 
     const profile = await Profile.findOneAndUpdate(

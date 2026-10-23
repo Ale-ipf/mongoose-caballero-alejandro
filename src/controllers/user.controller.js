@@ -1,15 +1,15 @@
+import { matchedData } from "express-validator";
 import { Role } from "../models/role.model.js";
 import { Profile } from "../models/profile.model.js";
 import { Task } from "../models/task.model.js";
 import { User } from "../models/user.model.js";
+import { hashPassword } from "../utils/password.js";
 import {
   ensureDocumentsExist,
   notFound,
-  pickFields,
   sendControllerError,
 } from "./controller.utils.js";
 
-const userFields = ["username", "email", "password", "addresses", "roles"];
 const userPopulation = [
   { path: "roles", match: { deletedAt: null } },
   { path: "profile", match: { deletedAt: null } },
@@ -28,8 +28,9 @@ const withoutPassword = (user) => {
 
 export const createUser = async (req, res) => {
   try {
-    const data = pickFields(req.body, userFields);
+    const data = matchedData(req, { locations: ["body"] });
     await ensureDocumentsExist(Role, data.roles ?? [], "roles");
+    data.password = await hashPassword(data.password);
 
     const user = new User(data);
     await user.save();
@@ -64,8 +65,9 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const data = pickFields(req.body, userFields);
+    const data = matchedData(req, { locations: ["body"] });
     await ensureDocumentsExist(Role, data.roles ?? [], "roles");
+    if (data.password) data.password = await hashPassword(data.password);
 
     const user = await User.findOneAndUpdate(
       { _id: req.params.id, deletedAt: null },

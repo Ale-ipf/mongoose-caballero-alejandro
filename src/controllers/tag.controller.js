@@ -1,14 +1,14 @@
+import { matchedData } from "express-validator";
 import { Tag } from "../models/tag.model.js";
 import { Task } from "../models/task.model.js";
 import {
   notFound,
-  pickFields,
   sendControllerError,
 } from "./controller.utils.js";
 
 export const createTag = async (req, res) => {
   try {
-    const tag = new Tag(pickFields(req.body, ["name"]));
+    const tag = new Tag(matchedData(req, { locations: ["body"] }));
     await tag.save();
     return res.status(201).json({ data: tag });
   } catch (error) {
@@ -43,7 +43,7 @@ export const updateTag = async (req, res) => {
   try {
     const tag = await Tag.findOneAndUpdate(
       { _id: req.params.id, deletedAt: null },
-      { $set: pickFields(req.body, ["name"]) },
+      { $set: matchedData(req, { locations: ["body"] }) },
       { new: true, runValidators: true },
     );
     if (!tag) return notFound(res, "Etiqueta");
