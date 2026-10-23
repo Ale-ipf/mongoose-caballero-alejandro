@@ -23,6 +23,10 @@ const taskSchema = new Schema(
         ref: "Tag",
       },
     ],
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

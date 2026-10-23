@@ -8,6 +8,10 @@ const tagSchema = new Schema(
       trim: true,
       unique: true,
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -43,6 +43,10 @@ const userSchema = new Schema(
         ref: "Role",
       },
     ],
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     toJSON: { virtuals: true },
@@ -54,6 +58,13 @@ userSchema.virtual("tasks", {
   ref: "Task",
   localField: "_id",
   foreignField: "author",
+});
+
+userSchema.virtual("profile", {
+  ref: "Profile",
+  localField: "_id",
+  foreignField: "user",
+  justOne: true,
 });
 
 export const User = model("User", userSchema);

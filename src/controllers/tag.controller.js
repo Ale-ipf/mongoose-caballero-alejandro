@@ -1,0 +1,75 @@
+import { Tag } from "../models/tag.model.js";
+import { Task } from "../models/task.model.js";
+import {
+  notFound,
+  pickFields,
+  sendControllerError,
+} from "./controller.utils.js";
+
+export const createTag = async (req, res) => {
+  try {
+    const tag = new Tag(pickFields(req.body, ["name"]));
+    await tag.save();
+    return res.status(201).json({ data: tag });
+  } catch (error) {
+    return sendControllerError(res, error, "No se pudo crear la etiqueta.");
+  }
+};
+
+export const getAllTags = async (_req, res) => {
+  try {
+    const tags = await Tag.find({ deletedAt: null }).sort({ name: 1 });
+    return res.status(200).json({ data: tags });
+  } catch (error) {
+    return sendControllerError(res, error, "No se pudieron obtener las etiquetas.");
+  }
+};
+
+export const getTagById = async (req, res) => {
+  try {
+    const tag = await Tag.findOne({ _id: req.params.id, deletedAt: null }).populate({
+      path: "tasks",
+      match: { deletedAt: null },
+      populate: { path: "author", match: { deletedAt: null } },
+    });
+    if (!tag) return notFound(res, "Etiqueta");
+    return res.status(200).json({ data: tag });
+  } catch (error) {
+    return sendControllerError(res, error, "No se pudo obtener la etiqueta.");
+  }
+};
+
+export const updateTag = async (req, res) => {
+  try {
+    const tag = await Tag.findOneAndUpdate(
+      { _id: req.params.id, deletedAt: null },
+      { $set: pickFields(req.body, ["name"]) },
+      { new: true, runValidators: true },
+    );
+    if (!tag) return notFound(res, "Etiqueta");
+    return res.status(200).json({ data: tag });
+  } catch (error) {
+    return sendControllerError(res, error, "No se pudo actualizar la etiqueta.");
+  }
+};
+
+export const deleteTag = async (req, res) => {
+  try {
+    const deletedAt = new Date();
+    const tag = await Tag.findOneAndUpdate(
+      { _id: req.params.id, deletedAt: null },
+      { $set: { deletedAt } },
+      { new: true },
+    );
+    if (!tag) return notFound(res, "Etiqueta");
+
+    await Task.updateMany(
+      { tags: tag._id },
+      { $pull: { tags: tag._id } },
+    );
+
+    return res.status(200).json({ message: "Etiqueta eliminada y desvinculada de las tareas." });
+  } catch (error) {
+    return sendControllerError(res, error, "No se pudo eliminar la etiqueta.");
+  }
+};

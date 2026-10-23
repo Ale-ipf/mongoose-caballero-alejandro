@@ -71,6 +71,14 @@ cada subdocumento, lo que facilita identificar y actualizar una dirección concr
 decisión es adecuada mientras las direcciones no necesiten compartirse entre usuarios ni
 administrarse como documentos independientes.
 
+## Relación uno a uno entre usuarios y perfiles
+
+Cada `Profile` guarda una referencia `user` a un usuario y tiene un índice único para que
+un usuario no tenga más de un perfil activo. En `User`, el virtual `profile` permite obtener
+ese perfil con `populate("profile")` sin almacenar también su identificador en el usuario.
+El perfil es un documento separado porque sus datos se administran de forma independiente
+de los datos de acceso del usuario.
+
 ## Relación muchos a muchos entre tareas y etiquetas
 
 Una tarea puede tener varias etiquetas y una misma etiqueta puede estar asociada a varias
