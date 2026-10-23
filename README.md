@@ -70,3 +70,17 @@ El array permite que un usuario tenga varias direcciones; Mongoose genera un `_i
 cada subdocumento, lo que facilita identificar y actualizar una dirección concreta. Esta
 decisión es adecuada mientras las direcciones no necesiten compartirse entre usuarios ni
 administrarse como documentos independientes.
+
+## Relación muchos a muchos entre tareas y etiquetas
+
+Una tarea puede tener varias etiquetas y una misma etiqueta puede estar asociada a varias
+tareas, por lo que la relación entre `Task` y `Tag` es de muchos a muchos (N:M). En
+`Task`, el campo `tags` guarda un array de referencias `ObjectId` al modelo `Tag`. La lista
+de tareas de una etiqueta se obtiene mediante el virtual `tasks` en `Tag`, que consulta los
+documentos `Task` cuyo campo `tags` contiene el `_id` de esa etiqueta. Así se evita guardar
+la relación en ambos modelos y duplicar datos.
+
+Se puede cargar la información relacionada con `populate`. Por ejemplo,
+`Task.findById(taskId).populate("tags")` trae las etiquetas de una tarea, y
+`Tag.findById(tagId).populate("tasks")` trae las tareas asociadas a una etiqueta. El campo
+virtual `tasks` está configurado para incluirse al convertir el documento a JSON u objeto.
