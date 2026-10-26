@@ -17,12 +17,6 @@ const taskSchema = new Schema(
       ref: "User",
       required: true,
     },
-    tags: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Tag",
-      },
-    ],
     deletedAt: {
       type: Date,
       default: null,
@@ -31,7 +25,15 @@ const taskSchema = new Schema(
   {
     timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
+
+taskSchema.virtual("taskTags", {
+  ref: "TaskTag",
+  localField: "_id",
+  foreignField: "task",
+});
 
 export const Task = model("Task", taskSchema);

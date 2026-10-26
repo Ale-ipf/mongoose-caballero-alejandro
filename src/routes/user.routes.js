@@ -6,12 +6,15 @@ import {
   getUserById,
   updateUser,
 } from "../controllers/user.controller.js";
-import { validate } from "../middlewares/validator.middleware.js";
+import {
+  requireMatchedBody,
+  validate,
+} from "../middlewares/validator.middleware.js";
 import {
   createUserValidation,
   idParamValidation,
   updateUserValidation,
-} from "../middlewares/validations/resource.validation.js";
+} from "../middlewares/validations/userValidation.js";
 
 export const userRouter = Router();
 
@@ -23,5 +26,11 @@ userRouter
 userRouter
   .route("/users/:id")
   .get(idParamValidation, validate, getUserById)
-  .patch(idParamValidation, updateUserValidation, validate, updateUser)
+  .patch(
+    idParamValidation,
+    updateUserValidation,
+    validate,
+    requireMatchedBody,
+    updateUser,
+  )
   .delete(idParamValidation, validate, deleteUser);

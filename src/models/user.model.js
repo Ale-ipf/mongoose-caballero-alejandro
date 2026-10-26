@@ -19,14 +19,12 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
     },
     email: {
       type: String,
       required: true,
       trim: true,
       lowercase: true,
-      unique: true,
     },
     password: {
       type: String,
@@ -52,6 +50,15 @@ const userSchema = new Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
+);
+
+userSchema.index(
+  { username: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );
 
 userSchema.virtual("tasks", {

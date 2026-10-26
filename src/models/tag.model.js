@@ -6,7 +6,6 @@ const tagSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
     },
     deletedAt: {
       type: Date,
@@ -21,10 +20,15 @@ const tagSchema = new Schema(
   },
 );
 
-tagSchema.virtual("tasks", {
-  ref: "Task",
+tagSchema.index(
+  { name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
+
+tagSchema.virtual("taskTags", {
+  ref: "TaskTag",
   localField: "_id",
-  foreignField: "tags",
+  foreignField: "tag",
 });
 
 export const Tag = model("Tag", tagSchema);

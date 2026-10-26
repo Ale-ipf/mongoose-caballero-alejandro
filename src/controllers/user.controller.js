@@ -1,14 +1,8 @@
 import { matchedData } from "express-validator";
-import { Role } from "../models/role.model.js";
 import { Profile } from "../models/profile.model.js";
 import { Task } from "../models/task.model.js";
+import { TaskTag } from "../models/taskTag.model.js";
 import { User } from "../models/user.model.js";
-import { hashPassword } from "../utils/password.js";
-import {
-  ensureDocumentsExist,
-  notFound,
-  sendControllerError,
-} from "./controller.utils.js";
 
 const userPopulation = [
   { path: "roles", match: { deletedAt: null } },
@@ -16,7 +10,11 @@ const userPopulation = [
   {
     path: "tasks",
     match: { deletedAt: null },
-    populate: { path: "tags", match: { deletedAt: null } },
+    populate: {
+      path: "taskTags",
+      match: { deletedAt: null },
+      populate: { path: "tag", match: { deletedAt: null } },
+    },
   },
 ];
 
@@ -84,23 +82,39 @@ export const updateUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const deletedAt = new Date();
-    const user = await User.findOneAndUpdate(
-      { _id: req.params.id, deletedAt: null },
-      { $set: { deletedAt } },
-      { new: true },
-    );
-    if (!user) return notFound(res, "Usuario");
+    const user = await runTransaction(async (session) => {
+      const deletedUser = await User.findOneAndUpdate(
+        { _id: req.params.id, deletedAt: null },
+        { $set: { deletedAt } },
+        { new: true, session },
+      );
+      if (!deletedUser) return null;
 
-    await Promise.all([
-      Task.updateMany(
-        { author: user._id, deletedAt: null },
+      const taskIds = await Task.find({
+        author: deletedUser._id,
+        deletedAt: null,
+      })
+        .distinct("_id")
+        .session(session);
+      await Task.updateMany(
+        { author: deletedUser._id, deletedAt: null },
         { $set: { deletedAt } },
-      ),
-      Profile.updateOne(
-        { user: user._id, deletedAt: null },
+        { session },
+      );
+      await TaskTag.updateMany(
+        { task: { $in: taskIds }, deletedAt: null },
         { $set: { deletedAt } },
-      ),
-    ]);
+        { session },
+      );
+      await Profile.updateOne(
+        { user: deletedUser._id, deletedAt: null },
+        { $set: { deletedAt } },
+        { session },
+      );
+      return deletedUser;
+    });
+
+    if (!user) return notFound(res, "Usuario");
 
     return res.status(200).json({ message: "Usuario y sus tareas y perfil eliminados." });
   } catch (error) {

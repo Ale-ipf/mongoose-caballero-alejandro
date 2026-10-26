@@ -8,14 +8,17 @@ import {
   removeTagFromTask,
   updateTask,
 } from "../controllers/task.controller.js";
-import { validate } from "../middlewares/validator.middleware.js";
+import {
+  requireMatchedBody,
+  validate,
+} from "../middlewares/validator.middleware.js";
 import {
   addTagToTaskValidation,
   createTaskValidation,
   removeTagFromTaskValidation,
   taskIdValidation,
   updateTaskValidation,
-} from "../middlewares/validations/task.validation.js";
+} from "../middlewares/validations/taskValidation.js";
 
 export const taskRouter = Router();
 
@@ -27,7 +30,13 @@ taskRouter
 taskRouter
   .route("/tasks/:id")
   .get(taskIdValidation, validate, getTaskById)
-  .patch(taskIdValidation, updateTaskValidation, validate, updateTask)
+  .patch(
+    taskIdValidation,
+    updateTaskValidation,
+    validate,
+    requireMatchedBody,
+    updateTask,
+  )
   .delete(taskIdValidation, validate, deleteTask);
 
 taskRouter

@@ -4,10 +4,9 @@ import "dotenv/config";
 import { startDB } from "./src/config/database.js";
 import { userRouter } from "./src/routes/user.routes.js";
 import { taskRouter } from "./src/routes/task.routes.js";
-import { roleRouter } from "./src/routes/role.routes.js";
+import { taskTagRouter } from "./src/routes/taskTag.routes.js";
 import { tagRouter } from "./src/routes/tag.routes.js";
 import { profileRouter } from "./src/routes/profile.routes.js";
-import { authRouter } from "./src/routes/auth.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -23,10 +22,9 @@ app.get("/health", (_req, res) => {
 //rutas
 app.use("/api", userRouter);
 app.use("/api", taskRouter);
-app.use("/api", roleRouter);
+app.use("/api", taskTagRouter);
 app.use("/api", tagRouter);
 app.use("/api", profileRouter);
-app.use("/api", authRouter);
 
 const startServer = async () => {
   try {

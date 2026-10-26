@@ -1,6 +1,7 @@
 import { body, param } from "express-validator";
 import { Tag } from "../../models/tag.model.js";
 import { Task } from "../../models/task.model.js";
+import { TaskTag } from "../../models/taskTag.model.js";
 import { User } from "../../models/user.model.js";
 
 export const taskIdValidation = param("id")
@@ -52,46 +53,16 @@ const authorValidation = (required) => {
     });
 };
 
-const tagsValidation = body("tags")
-  .optional()
-  .isArray()
-  .withMessage("tags debe ser un array.")
-  .bail()
-  .custom(async (tagIds) => {
-    if (
-      tagIds.some(
-        (tagId) => typeof tagId !== "string" || !/^[a-f\d]{24}$/i.test(tagId),
-      )
-    ) {
-      throw new Error("Cada etiqueta debe ser un ObjectId válido.");
-    }
-
-    const tagIdsSet = new Set(tagIds.map((tagId) => tagId.toLowerCase()));
-    if (tagIdsSet.size !== tagIds.length) {
-      throw new Error("No se pueden repetir etiquetas.");
-    }
-
-    const count = await Tag.countDocuments({
-      _id: { $in: [...tagIdsSet] },
-      deletedAt: null,
-    });
-    if (count !== tagIds.length) {
-      throw new Error("Una o más etiquetas no existen o están eliminadas.");
-    }
-  });
-
 export const createTaskValidation = [
   titleValidation(true),
   descriptionValidation(true),
   authorValidation(true),
-  tagsValidation,
 ];
 
 export const updateTaskValidation = [
   titleValidation(false),
   descriptionValidation(false),
   authorValidation(false),
-  tagsValidation,
 ];
 
 export const addTagToTaskValidation = [
@@ -100,19 +71,13 @@ export const addTagToTaskValidation = [
     .withMessage("tagId debe ser un ObjectId válido.")
     .bail()
     .custom(async (tagId, { req }) => {
-      if (!(await Tag.exists({ _id: tagId, deletedAt: null }))) {
-        throw new Error("La etiqueta no existe o está eliminada.");
-      }
       if (!(await Task.exists({ _id: req.params.id, deletedAt: null }))) {
         throw new Error("La tarea no existe o está eliminada.");
       }
-      if (
-        await Task.exists({
-          _id: req.params.id,
-          tags: tagId,
-          deletedAt: null,
-        })
-      ) {
+      if (!(await Tag.exists({ _id: tagId, deletedAt: null }))) {
+        throw new Error("La etiqueta no existe o está eliminada.");
+      }
+      if (await TaskTag.exists({ task: req.params.id, tag: tagId, deletedAt: null })) {
         throw new Error("La etiqueta ya está asociada a la tarea.");
       }
     }),

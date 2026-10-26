@@ -1,10 +1,6 @@
 import { matchedData } from "express-validator";
 import { Tag } from "../models/tag.model.js";
-import { Task } from "../models/task.model.js";
-import {
-  notFound,
-  sendControllerError,
-} from "./controller.utils.js";
+import { TaskTag } from "../models/taskTag.model.js";
 
 export const createTag = async (req, res) => {
   try {
@@ -28,9 +24,13 @@ export const getAllTags = async (_req, res) => {
 export const getTagById = async (req, res) => {
   try {
     const tag = await Tag.findOne({ _id: req.params.id, deletedAt: null }).populate({
-      path: "tasks",
+      path: "taskTags",
       match: { deletedAt: null },
-      populate: { path: "author", match: { deletedAt: null } },
+      populate: {
+        path: "task",
+        match: { deletedAt: null },
+        populate: { path: "author", match: { deletedAt: null } },
+      },
     });
     if (!tag) return notFound(res, "Etiqueta");
     return res.status(200).json({ data: tag });
@@ -56,17 +56,23 @@ export const updateTag = async (req, res) => {
 export const deleteTag = async (req, res) => {
   try {
     const deletedAt = new Date();
-    const tag = await Tag.findOneAndUpdate(
-      { _id: req.params.id, deletedAt: null },
-      { $set: { deletedAt } },
-      { new: true },
-    );
-    if (!tag) return notFound(res, "Etiqueta");
+    const tag = await runTransaction(async (session) => {
+      const deletedTag = await Tag.findOneAndUpdate(
+        { _id: req.params.id, deletedAt: null },
+        { $set: { deletedAt } },
+        { new: true, session },
+      );
+      if (!deletedTag) return null;
 
-    await Task.updateMany(
-      { tags: tag._id },
-      { $pull: { tags: tag._id } },
-    );
+      await TaskTag.updateMany(
+        { tag: deletedTag._id, deletedAt: null },
+        { $set: { deletedAt } },
+        { session },
+      );
+      return deletedTag;
+    });
+
+    if (!tag) return notFound(res, "Etiqueta");
 
     return res.status(200).json({ message: "Etiqueta eliminada y desvinculada de las tareas." });
   } catch (error) {

@@ -6,12 +6,15 @@ import {
   getProfileById,
   updateProfile,
 } from "../controllers/profile.controller.js";
-import { validate } from "../middlewares/validator.middleware.js";
+import {
+  requireMatchedBody,
+  validate,
+} from "../middlewares/validator.middleware.js";
 import {
   createProfileValidation,
   idParamValidation,
   updateProfileValidation,
-} from "../middlewares/validations/resource.validation.js";
+} from "../middlewares/validations/profileValidation.js";
 
 export const profileRouter = Router();
 
@@ -23,5 +26,11 @@ profileRouter
 profileRouter
   .route("/profiles/:id")
   .get(idParamValidation, validate, getProfileById)
-  .patch(idParamValidation, updateProfileValidation, validate, updateProfile)
+  .patch(
+    idParamValidation,
+    updateProfileValidation,
+    validate,
+    requireMatchedBody,
+    updateProfile,
+  )
   .delete(idParamValidation, validate, deleteProfile);

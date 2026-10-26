@@ -6,12 +6,15 @@ import {
   getTagById,
   updateTag,
 } from "../controllers/tag.controller.js";
-import { validate } from "../middlewares/validator.middleware.js";
+import {
+  requireMatchedBody,
+  validate,
+} from "../middlewares/validator.middleware.js";
 import {
   createTagValidation,
   idParamValidation,
   updateTagValidation,
-} from "../middlewares/validations/resource.validation.js";
+} from "../middlewares/validations/tagValidation.js";
 
 export const tagRouter = Router();
 
@@ -23,5 +26,11 @@ tagRouter
 tagRouter
   .route("/tags/:id")
   .get(idParamValidation, validate, getTagById)
-  .patch(idParamValidation, updateTagValidation, validate, updateTag)
+  .patch(
+    idParamValidation,
+    updateTagValidation,
+    validate,
+    requireMatchedBody,
+    updateTag,
+  )
   .delete(idParamValidation, validate, deleteTag);

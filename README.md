@@ -38,7 +38,20 @@
    `.env` fuera del repositorio; para compartir la configuración, actualizar `.env.example`
    sin incluir credenciales ni otros secretos.
 
-4. Iniciar MongoDB y ejecutar el servidor en modo desarrollo:
+4. Si la base ya tenía datos creados con índices únicos anteriores, respaldarla y migrar
+   esos índices antes de iniciar la aplicación:
+
+   ```bash
+   npm run migrate:soft-delete-indexes
+   ```
+
+   La migración reemplaza los índices únicos globales de `username`, `email`, `rolename` y
+   `name` por índices únicos que solo afectan documentos activos (`deletedAt: null`). Así,
+   esos valores se pueden reutilizar después de un borrado lógico. La migración solo elimina
+   índices únicos simples, sin filtro parcial, de esos campos; si crear los nuevos índices
+   falla por datos duplicados, revisarlos antes de volver a ejecutar el comando.
+
+5. Iniciar MongoDB y ejecutar el servidor en modo desarrollo:
 
    ```bash
    npm run dev
@@ -47,7 +60,7 @@
    El servidor espera a que la conexión con MongoDB se establezca antes de comenzar a
    escuchar en el puerto configurado.
 
-5. Comprobar que el servidor responde con `200 OK` en `http://localhost:3000/health`.
+6. Comprobar que el servidor responde con `200 OK` en `http://localhost:3000/health`.
    Por ejemplo, desde PowerShell:
 
    ```powershell
@@ -90,16 +103,16 @@ referencia.
 ## Relación muchos a muchos entre tareas y etiquetas
 
 Una tarea puede tener varias etiquetas y una misma etiqueta puede estar asociada a varias
-tareas, por lo que la relación entre `Task` y `Tag` es de muchos a muchos (N:M). En
-`Task`, el campo `tags` guarda un array de referencias `ObjectId` al modelo `Tag`. La lista
-de tareas de una etiqueta se obtiene mediante el virtual `tasks` en `Tag`, que consulta los
-documentos `Task` cuyo campo `tags` contiene el `_id` de esa etiqueta. Así se evita guardar
-la relación en ambos modelos y duplicar datos.
+tareas, por lo que la relación entre `Task` y `Tag` es de muchos a muchos (N:M). Cada
+vínculo se almacena como un documento `TaskTag` con referencias `task` y `tag`. Un índice
+único parcial impide vínculos activos duplicados y permite volver a asociar una etiqueta
+después de eliminar lógicamente el vínculo. Los virtuales `taskTags` de `Task` y `Tag`
+permiten recorrer la relación con `populate`.
 
-Se puede cargar la información relacionada con `populate`. Por ejemplo,
-`Task.findById(taskId).populate("tags")` trae las etiquetas de una tarea, y
-`Tag.findById(tagId).populate("tasks")` trae las tareas asociadas a una etiqueta. El campo
-virtual `tasks` está configurado para incluirse al convertir el documento a JSON u objeto.
+El CRUD de vínculos está disponible en `GET/POST /api/task-tags` y
+`GET/PATCH/DELETE /api/task-tags/:id`; además, se puede asociar o quitar una etiqueta desde
+`POST /api/tasks/:id/tags` y `DELETE /api/tasks/:id/tags/:tagId`. Al eliminar lógicamente
+una tarea o etiqueta, sus vínculos también se eliminan lógicamente.
 
 ## Endpoints
 
@@ -114,7 +127,7 @@ entrada con `express-validator`; los errores de entrada devuelven `400`.
 | Tareas | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id` |
 | Roles | `GET/POST /roles`, `GET/PATCH/DELETE /roles/:id` |
 | Etiquetas | `GET/POST /tags`, `GET/PATCH/DELETE /tags/:id` |
-| Etiquetas de tareas | `POST /tasks/:id/tags` con `{ "tagId": "..." }`; `DELETE /tasks/:id/tags/:tagId` |
+| Vínculos tarea-etiqueta | `GET/POST /task-tags`, `GET/PATCH/DELETE /task-tags/:id`; `POST /tasks/:id/tags` con `{ "tagId": "..." }`; `DELETE /tasks/:id/tags/:tagId` |
 
 El inicio de sesión verifica las credenciales, pero no crea una sesión persistente ni emite
 un token.
@@ -128,7 +141,7 @@ rol o etiqueta se quitan sus referencias de usuarios o tareas, respectivamente. 
 se eliminan lógicamente al eliminar al autor; sus etiquetas permanecen porque también
 pueden estar asociadas a otras tareas.
 
-Las operaciones que abarcan varias colecciones no están dentro de una transacción MongoDB.
-Por ello, si la base de datos falla durante una eliminación en cascada, puede quedar una
-actualización parcial; para garantizar atomicidad, MongoDB debe ejecutarse como replica set y
-las operaciones deberán agruparse en una transacción.
+Las eliminaciones que afectan varias colecciones usan transacciones, así que son atómicas:
+si una operación falla, los cambios se revierten. MongoDB debe ejecutarse como replica set
+o mongos; en un servidor standalone el endpoint responde con `503` y un mensaje que indica
+el requisito de configuración.
